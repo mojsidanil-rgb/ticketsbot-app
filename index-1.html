@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>TicketsBot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A1F1A;
+    --panel:#0F2E24;
+    --panel-2:#153A2C;
+    --gold:#E5C158;
+    --gold-dim:#8A6E23;
+    --teal:#2DD4A7;
+    --text:#F1F7F3;
+    --muted:#7FA396;
+    --line:#1E4A3B;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:16px 16px 32px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:4px 2px;
+  }
+  .brand{
+    font-family:'Archivo Black',sans-serif;
+    font-size:15px;
+    letter-spacing:0.5px;
+  }
+  .brand span{color:var(--gold);}
+  .id-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:1px;
+  }
+
+  /* Ticket stub — signature element */
+  .ticket{
+    position:relative;
+    background:linear-gradient(160deg,var(--panel) 0%, var(--panel-2) 100%);
+    border-radius:18px;
+    display:flex;
+    overflow:hidden;
+    border:1px solid var(--line);
+    animation:rise .5s ease-out both;
+  }
+  @keyframes rise{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .ticket-main{
+    flex:1;
+    padding:20px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .level-row{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .level-num{
+    font-family:'Archivo Black',sans-serif;
+    font-size:38px;
+    line-height:1;
+    color:var(--gold);
+  }
+  .level-label{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .xp-track{
+    height:6px;
+    border-radius:3px;
+    background:var(--line);
+    overflow:hidden;
+    margin-top:4px;
+  }
+  .xp-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--gold-dim),var(--gold));
+    border-radius:3px;
+    transition:width .6s ease;
+  }
+  .xp-caption{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  /* perforated divider */
+  .perf{
+    width:0;
+    position:relative;
+    border-left:2px dashed var(--line);
+  }
+  .perf::before, .perf::after{
+    content:"";
+    position:absolute;
+    left:-9px;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--ink);
+  }
+  .perf::before{top:-9px;}
+  .perf::after{bottom:-9px;}
+
+  .ticket-side{
+    width:92px;
+    flex-shrink:0;
+    padding:20px 10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+  .serial{
+    writing-mode:vertical-rl;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:3px;
+    color:var(--muted);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .stat{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 14px;
+    animation:rise .5s ease-out both;
+  }
+  .stat:nth-child(1){animation-delay:.05s;}
+  .stat:nth-child(2){animation-delay:.1s;}
+  .stat:nth-child(3){animation-delay:.15s;}
+  .stat:nth-child(4){animation-delay:.2s;}
+  .stat-label{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .stat-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:20px;
+    font-weight:600;
+  }
+  .stat-value.gold{color:var(--gold);}
+  .stat-value.teal{color:var(--teal);}
+
+  .jackpot{
+    background:var(--panel);
+    border:1px solid var(--gold-dim);
+    border-radius:16px;
+    padding:18px;
+    text-align:center;
+    animation:rise .5s ease-out .25s both;
+  }
+  .jackpot-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+  .jackpot-value{
+    font-family:'Archivo Black',sans-serif;
+    font-size:34px;
+    color:var(--text);
+  }
+  .jackpot-value .unit{
+    font-size:15px;
+    color:var(--muted);
+    font-family:'Inter',sans-serif;
+    margin-left:6px;
+  }
+  .jackpot-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+
+  .cta{
+    display:flex;
+    gap:10px;
+  }
+  .btn{
+    flex:1;
+    border:none;
+    border-radius:14px;
+    padding:14px 0;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--gold),var(--teal));
+    color:#0A2018;
+  }
+  .btn-secondary{
+    background:var(--panel);
+    color:var(--text);
+    border:1px solid var(--line);
+  }
+
+  .note{
+    font-size:11px;
+    color:var(--muted);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">Tickets<span>Bot</span></div>
+    <div class="id-tag" id="userTag">@guest</div>
+  </div>
+
+  <div class="ticket">
+    <div class="ticket-main">
+      <div class="eyebrow">Уровень игрока</div>
+      <div class="level-row">
+        <div class="level-num" id="levelNum">1</div>
+        <div class="level-label">/ 5</div>
+      </div>
+      <div class="xp-track"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div class="xp-caption" id="xpCaption">0 / 50 XP</div>
+    </div>
+    <div class="perf"></div>
+    <div class="ticket-side">
+      <div class="serial" id="serial">NO-000000</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="stat">
+      <div class="stat-label">Звёзды</div>
+      <div class="stat-value gold" id="stars">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">TON</div>
+      <div class="stat-value teal" id="ton">0.00</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Билеты</div>
+      <div class="stat-value" id="tickets">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Рефералы</div>
+      <div class="stat-value" id="referrals">0</div>
+    </div>
+  </div>
+
+  <div class="jackpot">
+    <div class="jackpot-label">Джекпот-пул</div>
+    <div class="jackpot-value"><span id="jackpot">0</span><span class="unit">⭐</span></div>
+    <div class="jackpot-sub" id="contribution">Твой вклад: 0 ⭐</div>
+  </div>
+
+  <div class="cta">
+    <button class="btn btn-primary" id="btnTicket">Открыть билет</button>
+    <button class="btn btn-secondary" id="btnInvite">Пригласить</button>
+  </div>
+
+  <div class="note">Демо-данные · подключим бота позже</div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  // Заглушка данных — здесь позже будет реальный fetch к API бота
+  const mockUser = {
+    username: tg?.initDataUnsafe?.user?.username || "guest",
+    id: tg?.initDataUnsafe?.user?.id || 100482,
+    stars_balance: 340,
+    ton_balance: 1.25,
+    tickets: 7,
+    xp: 32,
+    level: 2,
+    referral_count: 3
+  };
+  const LEVEL_XP = {1:50, 2:150, 3:300, 4:500, 5:800};
+  const jackpot = { total_stars: 12840 };
+  const myContribution = 210;
+
+  document.getElementById("userTag").textContent = "@" + mockUser.username;
+  document.getElementById("serial").textContent = "NO-" + String(mockUser.id).padStart(6,"0");
+  document.getElementById("levelNum").textContent = mockUser.level;
+  document.getElementById("stars").textContent = mockUser.stars_balance.toLocaleString("ru-RU");
+  document.getElementById("ton").textContent = mockUser.ton_balance.toFixed(2);
+  document.getElementById("tickets").textContent = mockUser.tickets;
+  document.getElementById("referrals").textContent = mockUser.referral_count;
+  document.getElementById("jackpot").textContent = jackpot.total_stars.toLocaleString("ru-RU");
+  document.getElementById("contribution").textContent = "Твой вклад: " + myContribution.toLocaleString("ru-RU") + " ⭐";
+
+  const needed = LEVEL_XP[mockUser.level] || 1;
+  const pct = Math.min(100, Math.round((mockUser.xp / needed) * 100));
+  document.getElementById("xpFill").style.width = pct + "%";
+  document.getElementById("xpCaption").textContent = mockUser.xp + " / " + needed + " XP";
+
+  document.getElementById("btnTicket").addEventListener("click", () => {
+    tg?.HapticFeedback?.impactOccurred("light");
+    tg ? tg.showAlert("Открытие билета скоро будет подключено к боту") : alert("Открытие билета скоро будет подключено к боту");
+  });
+  document.getElementById("btnInvite").addEventListener("click", () => {
+    tg?.HapticFeedback?.impactOccurred("light");
+    const link = "https://t.me/YourBotUsername?start=ref_" + mockUser.id;
+    if (tg) tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(link));
+    else alert(link);
+  });
+</script>
+</body>
+</html>
